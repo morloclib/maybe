@@ -1,0 +1,58 @@
+module maybe (*)
+
+import root
+
+-- Extract
+
+-- Unwrap an optional value (safe under a null guard)
+fromMaybe a :: ?a -> a
+
+-- Return the value if non-null, otherwise return the default
+fromMaybeWith a :: a -> ?a -> a
+fromMaybeWith default x
+  ? x == Null = default
+  : fromMaybe x
+
+-- Apply function to the value if non-null, otherwise return the default
+tryMaybe a b :: (a -> b) -> b -> ?a -> b
+tryMaybe f default x
+  ? x == Null = default
+  : f (fromMaybe x)
+
+-- Transform
+
+mapMaybe a b :: (a -> b) -> ?a -> ?b
+mapMaybe f x
+  ? x == Null = Null
+  : f (fromMaybe x)
+
+bindMaybe a b :: (a -> ?b) -> ?a -> ?b
+bindMaybe f x
+  ? x == Null = Null
+  : f (fromMaybe x)
+
+-- List interop
+
+-- Filter nulls from a list of optionals
+catMaybes a :: [?a] -> [a]
+catMaybes = map fromMaybe . filter ((!=) Null)
+
+-- Convert an optional to a zero- or one-element list
+maybeToList a :: ?a -> [a]
+maybeToList x
+  ? x == Null = []
+  : [fromMaybe x]
+
+-- Head of the list or null
+listToMaybe a :: [a] -> ?a
+listToMaybe xs
+  ? xs == mempty = Null
+  : at 0 xs -- this will be coerced to ?a
+
+-- Lifting
+
+liftMaybe2 a b c :: (a -> b -> c) -> ?a -> ?b -> ?c
+liftMaybe2 f x y
+  ? x == Null = Null
+  ? y == Null = Null
+  : f (fromMaybe x) (fromMaybe y)
