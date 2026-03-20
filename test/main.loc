@@ -1,0 +1,133 @@
+module maybe.test (test)
+
+import maybe
+import root
+
+type Py => Int = "int"
+type Py => Str = "str"
+type Py => Real = "float"
+type Py => Bool = "bool"
+type Py => Tuple2 a b = "tuple" a b
+type Py => List a = "list" a
+
+-------------------------------------------------------------------------------
+-- Test suite functions
+
+source Py from "maybe-test.py" ("testEqual", "printMsg", "printResult")
+testEqual
+    :: Str -- description of the test
+    -> a
+    -> a
+    -> (Int, Int) -- total number of tests and total fails
+    -> (Int, Int)
+printMsg :: Str -> a -> a
+printResult :: (Int, Int) -> (Int, Int)
+
+testGroup
+    :: Str
+    -> ((Int, Int) -> (Int, Int))
+    -> (Int, Int)
+    -> (Int, Int)
+testGroup msg tests = tests . printMsg msg
+
+passed :: (Int, Int) -> Bool
+passed t = 0 == (.0 t)
+
+test = runTests (0,0)
+
+-------------------------------------------------------------------------------
+-- Test suite
+
+runTests :: (Int, Int) -> Bool
+runTests =
+  ( passed
+  . printResult
+  . testGroup "Lifting" testLifting
+  . testGroup "List Interop" testListInterop
+  . testGroup "Transform" testTransform
+  . testGroup "Extract" testExtract
+  )
+
+-------------------------------------------------------------------------------
+-- Extract: fromMaybe, fromMaybeWith, tryMaybe
+
+testExtract :: (Int, Int) -> (Int, Int)
+testExtract =
+  ( -- fromMaybe (unwrap non-null value)
+    testEqual "fromMaybe int" (fromMaybe 42) 42
+  . testEqual "fromMaybe str" (fromMaybe "hello") "hello"
+  . testEqual "fromMaybe zero" (fromMaybe 0) 0
+  . testEqual "fromMaybe empty str" (fromMaybe "") ""
+  . testEqual "fromMaybe negative" (fromMaybe (0 - 5)) (0 - 5)
+  -- fromMaybeWith (default if null)
+  . testEqual "fromMaybeWith non-null" (fromMaybeWith 0 42) 42
+  . testEqual "fromMaybeWith null" (fromMaybeWith 0 (Null :: ?Int)) 0
+  . testEqual "fromMaybeWith str non-null" (fromMaybeWith "default" "hello") "hello"
+  . testEqual "fromMaybeWith str null" (fromMaybeWith "default" (Null :: ?Str)) "default"
+  . testEqual "fromMaybeWith zero non-null" (fromMaybeWith 99 0) 0
+  -- tryMaybe (apply function or return default)
+  . testEqual "tryMaybe non-null" (tryMaybe (_ + 1) 0 42) 43
+  . testEqual "tryMaybe null" (tryMaybe (_ + 1) 0 (Null :: ?Int)) 0
+  . testEqual "tryMaybe show" (tryMaybe show "none" 42) "42"
+  . testEqual "tryMaybe show null" (tryMaybe show "none" (Null :: ?Int)) "none"
+  . testEqual "tryMaybe double" (tryMaybe (_ * 2) 0 5) 10
+  )
+
+-------------------------------------------------------------------------------
+-- Transform: mapMaybe, bindMaybe
+
+testTransform :: (Int, Int) -> (Int, Int)
+testTransform =
+  ( -- mapMaybe (apply function if non-null)
+    testEqual "mapMaybe non-null" (mapMaybe (_ + 1) 42) 43
+  . testEqual "mapMaybe null" (mapMaybe (_ + 1) (Null :: ?Int)) (Null :: ?Int)
+  . testEqual "mapMaybe show" (mapMaybe show 42) "42"
+  . testEqual "mapMaybe show null" (mapMaybe show (Null :: ?Int)) (Null :: ?Str)
+  . testEqual "mapMaybe zero" (mapMaybe (_ + 1) 0) 1
+  -- bindMaybe (apply function returning optional)
+  . testEqual "bindMaybe non-null" (bindMaybe (\x -> x + 1) 42) 43
+  . testEqual "bindMaybe null" (bindMaybe (\x -> x + 1) (Null :: ?Int)) (Null :: ?Int)
+  . testEqual "bindMaybe returns null" (bindMaybe (\x -> find (_ > 10) [x]) 5) (Null :: ?Int)
+  . testEqual "bindMaybe returns value" (bindMaybe (\x -> find (_ > 0) [x]) 5) 5
+  . testEqual "bindMaybe chain" (bindMaybe (\x -> find (_ > 0) [x]) (Null :: ?Int)) (Null :: ?Int)
+  )
+
+-------------------------------------------------------------------------------
+-- List Interop: catMaybes, maybeToList, listToMaybe
+
+testListInterop :: (Int, Int) -> (Int, Int)
+testListInterop =
+  ( -- catMaybes (filter nulls from list of optionals)
+    testEqual "catMaybes mixed" (catMaybes [1, Null, 2, Null, 3]) [1, 2, 3]
+  . testEqual "catMaybes all null" (catMaybes [Null, Null, Null] :: [Int]) ([] :: [Int])
+  . testEqual "catMaybes no null" (catMaybes [1, 2, 3]) [1, 2, 3]
+  . testEqual "catMaybes empty" (catMaybes ([] :: [?Int])) ([] :: [Int])
+  . testEqual "catMaybes single null" (catMaybes [Null] :: [Int]) ([] :: [Int])
+  . testEqual "catMaybes single value" (catMaybes [42]) [42]
+  -- maybeToList (convert optional to zero- or one-element list)
+  . testEqual "maybeToList value" (maybeToList 42) [42]
+  . testEqual "maybeToList null" (maybeToList (Null :: ?Int)) ([] :: [Int])
+  . testEqual "maybeToList str" (maybeToList "hello") ["hello"]
+  . testEqual "maybeToList str null" (maybeToList (Null :: ?Str)) ([] :: [Str])
+  -- listToMaybe (head of list or null)
+  . testEqual "listToMaybe non-empty" (listToMaybe [1, 2, 3]) 1
+  . testEqual "listToMaybe single" (listToMaybe [42]) 42
+  . testEqual "listToMaybe empty" (listToMaybe ([] :: [Int])) (Null :: ?Int)
+  . testEqual "listToMaybe str" (listToMaybe ["a", "b"]) "a"
+  . testEqual "listToMaybe str empty" (listToMaybe ([] :: [Str])) (Null :: ?Str)
+  )
+
+-------------------------------------------------------------------------------
+-- Lifting: liftMaybe2
+
+testLifting :: (Int, Int) -> (Int, Int)
+testLifting =
+  ( -- liftMaybe2 (apply binary function to two optionals)
+    testEqual "liftMaybe2 both" (liftMaybe2 (+) 3 4) 7
+  . testEqual "liftMaybe2 left null" (liftMaybe2 (+) (Null :: ?Int) 4) (Null :: ?Int)
+  . testEqual "liftMaybe2 right null" (liftMaybe2 (+) 3 (Null :: ?Int)) (Null :: ?Int)
+  . testEqual "liftMaybe2 both null" (liftMaybe2 (+) (Null :: ?Int) (Null :: ?Int)) (Null :: ?Int)
+  . testEqual "liftMaybe2 concat" (liftMaybe2 (<>) "hello" " world") "hello world"
+  . testEqual "liftMaybe2 concat null" (liftMaybe2 (<>) (Null :: ?Str) "world") (Null :: ?Str)
+  . testEqual "liftMaybe2 mul" (liftMaybe2 (*) 3 4) 12
+  )
