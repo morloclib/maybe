@@ -59,6 +59,13 @@ testExtract =
   . testEqual "fromMaybe zero" (fromMaybe 0) 0
   . testEqual "fromMaybe empty str" (fromMaybe "") ""
   . testEqual "fromMaybe negative" (fromMaybe (0 - 5)) (0 - 5)
+  -- isNull (check if value is null)
+  . testEqual "isNull null int" (isNull (Null :: ?Int)) True
+  . testEqual "isNull non-null int" (isNull 42) False
+  . testEqual "isNull null str" (isNull (Null :: ?Str)) True
+  . testEqual "isNull non-null str" (isNull "hello") False
+  . testEqual "isNull zero" (isNull 0) False
+  . testEqual "isNull empty str" (isNull "") False
   -- fromMaybeWith (default if null)
   . testEqual "fromMaybeWith non-null" (fromMaybeWith 0 42) 42
   . testEqual "fromMaybeWith null" (fromMaybeWith 0 (Null :: ?Int)) 0

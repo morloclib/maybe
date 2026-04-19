@@ -7,10 +7,13 @@ import root
 -- Unwrap an optional value (safe under a null guard)
 fromMaybe :: ?a -> a
 
+-- True if an optional value is null
+isNull :: ?a -> Bool
+
 -- Return the value if non-null, otherwise return the default
 fromMaybeWith :: a -> ?a -> a
 fromMaybeWith default x
-  ? x == Null = default
+  ? isNull x = default
   : fromMaybe x
 
 -- Apply function to the value if non-null, otherwise return the default
