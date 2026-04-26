@@ -5,46 +5,46 @@ import root
 -- Extract
 
 -- Unwrap an optional value (safe under a null guard)
-fromMaybe :: ?a -> a
+require :: ?a -> a
 
 -- True if an optional value is null
 isNull :: ?a -> Bool
 
 -- Return the value if non-null, otherwise return the default
-fromMaybeWith :: a -> ?a -> a
-fromMaybeWith default x
-  ? isNull x = default
-  : fromMaybe x
+default :: a -> ?a -> a
+default def x
+  ? isNull x = def
+  : require x
 
 -- Apply function to the value if non-null, otherwise return the default
 tryMaybe :: (a -> b) -> b -> ?a -> b
 tryMaybe f default x
   ? x == Null = default
-  : f (fromMaybe x)
+  : f (require x)
 
 -- Transform
 
 mapMaybe :: (a -> b) -> ?a -> ?b
 mapMaybe f x
   ? x == Null = Null
-  : f (fromMaybe x)
+  : f (require x)
 
 bindMaybe :: (a -> ?b) -> ?a -> ?b
 bindMaybe f x
   ? x == Null = Null
-  : f (fromMaybe x)
+  : f (require x)
 
 -- List interop
 
 -- Filter nulls from a list of optionals
 catMaybes :: [?a] -> [a]
-catMaybes = map fromMaybe . filter ((!=) Null)
+catMaybes = map require . filter (!= Null)
 
 -- Convert an optional to a zero- or one-element list
 maybeToList :: ?a -> [a]
 maybeToList x
   ? x == Null = []
-  : [fromMaybe x]
+  : [require x]
 
 -- Head of the list or null
 listToMaybe :: [a] -> ?a
@@ -58,4 +58,4 @@ liftMaybe2 :: (a -> b -> c) -> ?a -> ?b -> ?c
 liftMaybe2 f x y
   ? x == Null = Null
   ? y == Null = Null
-  : f (fromMaybe x) (fromMaybe y)
+  : f (require x) (require y)
