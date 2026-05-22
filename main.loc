@@ -19,19 +19,19 @@ default def x
 -- Apply function to the value if non-null, otherwise return the default
 tryMaybe :: (a -> b) -> b -> ?a -> b
 tryMaybe f default x
-  ? x == Null = default
+  ? isNull x = default
   : f (require x)
 
 -- Transform
 
 mapMaybe :: (a -> b) -> ?a -> ?b
 mapMaybe f x
-  ? x == Null = Null
+  ? isNull x = Null
   : f (require x)
 
 bindMaybe :: (a -> ?b) -> ?a -> ?b
 bindMaybe f x
-  ? x == Null = Null
+  ? isNull x = Null
   : f (require x)
 
 -- List interop
@@ -43,7 +43,7 @@ catMaybes = map require . filter (!= Null)
 -- Convert an optional to a zero- or one-element list
 maybeToList :: ?a -> [a]
 maybeToList x
-  ? x == Null = []
+  ? isNull x = []
   : [require x]
 
 -- Head of the list or null
@@ -56,6 +56,6 @@ listToMaybe xs
 
 liftMaybe2 :: (a -> b -> c) -> ?a -> ?b -> ?c
 liftMaybe2 f x y
-  ? x == Null = Null
-  ? y == Null = Null
+  ? isNull x = Null
+  ? isNull y = Null
   : f (require x) (require y)
