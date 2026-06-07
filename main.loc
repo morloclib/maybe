@@ -50,7 +50,7 @@ maybeToList x
 listToMaybe :: [a] -> ?a
 listToMaybe xs
   ? xs == mempty = Null
-  : at 0 xs -- this will be coerced to ?a
+  : .[0] xs
 
 -- Lifting
 
