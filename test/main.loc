@@ -2,55 +2,24 @@ module maybe.test (test)
 
 import maybe
 import root
+import unittest
 
-type Py => Int = "int"
-type Py => Str = "str"
-type Py => Real = "float"
-type Py => Bool = "bool"
-type Py => Tuple2 a b = "tuple" a b
-type Py => List a = "list" a
-
--------------------------------------------------------------------------------
--- Test suite functions
-
-source Py from "maybe-test.py" ("testEqual", "printMsg", "printResult")
-testEqual
-    :: Str -- description of the test
-    -> a
-    -> a
-    -> (Int, Int) -- total number of tests and total fails
-    -> (Int, Int)
-printMsg :: Str -> a -> a
-printResult :: (Int, Int) -> (Int, Int)
-
-testGroup
-    :: Str
-    -> ((Int, Int) -> (Int, Int))
-    -> (Int, Int)
-    -> (Int, Int)
-testGroup msg tests = tests . printMsg msg
-
-passed :: (Int, Int) -> Bool
-passed t = 0 == (.0 t)
-
-test = runTests (0,0)
+test = suite runTests
 
 -------------------------------------------------------------------------------
 -- Test suite
 
-runTests :: (Int, Int) -> Bool
+runTests :: Test
 runTests =
-  ( passed
-  . printResult
-  . testGroup "Lifting" testLifting
-  . testGroup "List Interop" testListInterop
-  . testGroup "Transform" testTransform
-  . testGroup "Extract" testExtract
+  ( group "Lifting" testLifting
+  . group "List Interop" testListInterop
+  . group "Transform" testTransform
+  . group "Extract" testExtract
   )
 
 -------------------------------------------------------------------------------
 
-testExtract :: (Int, Int) -> (Int, Int)
+testExtract :: Test
 testExtract =
   ( -- require (unwrap non-null value)
     testEqual "require int" (require 42) 42
@@ -82,7 +51,7 @@ testExtract =
 -------------------------------------------------------------------------------
 -- Transform: mapMaybe, bindMaybe
 
-testTransform :: (Int, Int) -> (Int, Int)
+testTransform :: Test
 testTransform =
   ( -- mapMaybe (apply function if non-null)
     testEqual "mapMaybe non-null" (mapMaybe (+ 1) 42) 43
@@ -101,7 +70,7 @@ testTransform =
 -------------------------------------------------------------------------------
 -- List Interop: catMaybes, maybeToList, listToMaybe
 
-testListInterop :: (Int, Int) -> (Int, Int)
+testListInterop :: Test
 testListInterop =
   ( -- catMaybes (filter nulls from list of optionals)
     testEqual "catMaybes mixed" (catMaybes [1, Null, 2, Null, 3]) [1, 2, 3]
@@ -126,7 +95,7 @@ testListInterop =
 -------------------------------------------------------------------------------
 -- Lifting: liftMaybe2
 
-testLifting :: (Int, Int) -> (Int, Int)
+testLifting :: Test
 testLifting =
   ( -- liftMaybe2 (apply binary function to two optionals)
     testEqual "liftMaybe2 both" (liftMaybe2 (+) 3 4) 7

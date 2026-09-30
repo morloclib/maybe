@@ -38,7 +38,7 @@ bindMaybe f x
 
 -- Filter nulls from a list of optionals
 catMaybes :: [?a] -> [a]
-catMaybes = map require . filter (!= Null)
+catMaybes = map require . filter (\x -> not (isNull x))
 
 -- Convert an optional to a zero- or one-element list
 maybeToList :: ?a -> [a]
